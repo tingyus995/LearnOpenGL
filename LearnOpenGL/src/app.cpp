@@ -1,8 +1,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <iostream>
 #include "Shader.h"
 #include "vendor/stb_image.h"
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
@@ -41,16 +46,40 @@ int main() {
 	std::cout << "Maximum number of vertex attributes supported: " << nrAttributes << std::endl;
 
 	float verticies[] = {
-		 0.5f,  0.5f, 0.0f, 0.5f, 0.0f, 0.0f, // top right
-		 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,// bottom right
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,// bottom left
-		-0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top left
+		// positions        // colors         // texture coords
+		 0.5f,  0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+		 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // top left
 	};
 
 	unsigned int indicies[] = {
 		0, 1, 3, // first triangle
 		1, 2, 3 // second triangle
 	};
+
+	int width, height, nrChannels;
+	
+	// texture	
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+	
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		stbi_image_free(data);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	
 
 
 	unsigned int VAO;
@@ -69,18 +98,44 @@ int main() {
 
 	Shader shader("src/shader.vs", "src/shader.fs");
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	shader.use();
 
+	glActiveTexture(GL_TEXTURE1);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	
+	data = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	shader.setInt("ourTexture", 0);
+	shader.setInt("ourTexture2", 1);
+	
+	
+
+	unsigned transformLoc = glGetUniformLocation(shader.ID, "transform");
 
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
+
+		
+		glm::mat4 trans(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans,(float) glfwGetTime() , glm::vec3(0.0, 0.0, 1.0));
+		// trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
