@@ -26,16 +26,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Shader.h">
+    <ClInclude Include="src\vendor\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\vendor\stb_image.h">
+    <ClInclude Include="src\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\shader.fs" />
-    <None Include="src\shader.vs" />
+    <None Include="src\lightSourceShader.fs" />
+    <None Include="src\lightSourceShader.vs" />
+    <None Include="src\lightingShader.fs" />
+    <None Include="src\lightingShader.vs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="container.jpg">
